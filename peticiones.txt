@@ -1,0 +1,11 @@
+P,Historia Universal,11111
+P,Geografía Mundial,22222
+R,Historia Universal,11111
+R,Clean Code,34567
+D,Geografía Mundial,22222
+D,Operating System Concepts,67890
+P,Historia Universal,99999
+R,Clean Code,34567
+D,Redes de Computadoras,78901
+X,Historia Universal,11111
+Q,Salir,0
