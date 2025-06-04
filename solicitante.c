@@ -9,7 +9,7 @@
 #include <getopt.h>
 #include "common.h"
 
-static char fifo_name[FIFO_NAME_LEN]; // Nombre del FIFO (mi_fifo)
+static char fifo_name[FIFO_NAME_LEN]; 
 
 /*
  * Modo interactivo:

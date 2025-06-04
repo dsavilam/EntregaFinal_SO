@@ -7,7 +7,6 @@
 #include <pthread.h>
 #include "db.h"
 
-// --- DEFINICIONES de variables globales ---
 TaskBuffer task_buffer;           
 BookNode *db_head = NULL;        
 pthread_mutex_t db_mux = PTHREAD_MUTEX_INITIALIZER;
@@ -22,9 +21,6 @@ static void format_date(time_t t, char out_date[]) {
 }
 
 // Carga la base de datos desde un archivo de texto.
-// Formato esperado:
-//   Línea con: Título,ISBN,TotalEjemplares
-//   Luego TotalEjemplares líneas con: ejemplarID, <espacio>Status, <espacio>Fecha
 void load_db(const char *filename) {
     FILE *f = fopen(filename, "r");
     if (!f) {
@@ -55,18 +51,14 @@ void load_db(const char *filename) {
         // Leer exactamente 'total' líneas siguientes, cada una describe un ejemplar
         for (int i = 0; i < bn->book.total; i++) {
             if (!fgets(line, sizeof(line), f)) break;
-            // Ejemplo de línea: "1, D, 01-01-2025\n"
             char *t2 = strtok(line, ",");
             bn->book.ejemplares[i].id = atoi(t2);
 
             t2 = strtok(NULL, ",");
-            // t2 apunta a " D"
-            bn->book.ejemplares[i].status = t2[1]; // p.ej. 'D' o 'P'
+            bn->book.ejemplares[i].status = t2[1]; 
 
             t2 = strtok(NULL, ",");
-            // t2 apunta a " 01-01-2025\n"
             strncpy(bn->book.ejemplares[i].date, t2, DATE_STR_LEN);
-            // Elimina cualquier '\r' o '\n' al final
             bn->book.ejemplares[i].date[
                 strcspn(bn->book.ejemplares[i].date, "\r\n")
             ] = '\0';
@@ -81,7 +73,6 @@ void load_db(const char *filename) {
 }
 
 // Guarda la BD actual de vuelta a un archivo de texto.
-// (Llamado al terminar para conservar cambios).
 void save_db(const char *filename) {
     pthread_mutex_lock(&db_mux);
 
@@ -119,7 +110,6 @@ void save_db(const char *filename) {
 }
 
 // Busca un libro por ISBN en la lista enlazada.
-// Retorna puntero al nodo encontrado o NULL si no existe.
 BookNode* find_book(int isbn) {
     for (BookNode *bn = db_head; bn; bn = bn->next) {
         if (bn->book.isbn == isbn) {
@@ -130,7 +120,6 @@ BookNode* find_book(int isbn) {
 }
 
 // Busca un ejemplar disponible ('D') en el arreglo de un Book.
-// Retorna el índice (0..total-1) o -1 si ninguno está disponible.
 int find_available_ejemplar(Book *b) {
     for (int i = 0; i < b->total; i++) {
         if (b->ejemplares[i].status == 'D') {
@@ -141,10 +130,6 @@ int find_available_ejemplar(Book *b) {
 }
 
 // Realiza el préstamo de un ejemplar de un libro con el ISBN dado.
-// - Encuentra ejemplar disponible.
-// - Marca status 'P' y fija fecha de devolución (7 días a partir de hoy).
-// - Agrega entrada de log.
-// Devuelve 0 si OK, -1 si falla (ejemplar no disponible o libro no existe).
 int do_prestamo(int isbn, int *out_ejemplar, char out_date[]) {
     pthread_mutex_lock(&db_mux);
 
@@ -182,10 +167,6 @@ int do_prestamo(int isbn, int *out_ejemplar, char out_date[]) {
 }
 
 // Realiza renovación de un ejemplar específico de un libro.
-// - Verifica que el ejemplar esté prestado ('P').
-// - Extiende fecha de devolución 7 días más.
-// - Agrega entrada de log.
-// Devuelve 0 si OK, -1 si falla.
 int do_renovar(int isbn, int ejemplar, char out_date[]) {
     pthread_mutex_lock(&db_mux);
 
@@ -221,9 +202,6 @@ int do_renovar(int isbn, int ejemplar, char out_date[]) {
 }
 
 // Realiza devolución de un ejemplar prestado.
-// - Verifica que el ejemplar esté prestado ('P').
-// - Cambia status a 'D', fija fecha hoy, agrega log.
-// Devuelve 0 si OK, -1 si falla.
 int do_devolver(int isbn, int ejemplar) {
     pthread_mutex_lock(&db_mux);
 
@@ -277,7 +255,6 @@ void add_log(char status, const char *title, int isbn, int ejemplar, const char 
 }
 
 // Imprime por pantalla todos los registros de la lista de logs.
-// Cada línea: status, título, ISBN, ejemplar, fecha
 void print_report() {
     pthread_mutex_lock(&log_mux);
     for (LogEntry *le = log_head; le; le = le->next) {

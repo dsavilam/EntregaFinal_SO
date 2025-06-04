@@ -12,11 +12,11 @@
 #include "buffer.h"
 #include "db.h"
 
-static char fifo_name[FIFO_NAME_LEN];   // Nombre del FIFO
-static char db_filename[128];           // Archivo de base de datos inicial
-static char out_filename[128];          // Archivo de base de datos final (si -s)
-static int verbose = 0;                 // Modo verbose (imprime logs por pantalla)
-static int keep_running = 1;            // Controla bucle principal / hilos
+static char fifo_name[FIFO_NAME_LEN];   
+static char db_filename[128];          
+static char out_filename[128];          
+static int verbose = 0;                 
+static int keep_running = 1;            
 
 /*
  * Hilo que procesa en segundo plano las tareas de renovación y devolución
@@ -66,13 +66,6 @@ void* aux2_thread(void* arg) {
     return NULL;
 }
 
-/*
- * Procesa una petición que viene del solicitante:
- *   OP_PRESTAMO: intenta préstamo, devuelve OK/FAIL
- *   OP_RENOVAR: busca ejemplar 'P', renueva o FAIL
- *   OP_DEVOLVER: busca ejemplar 'P', devuelve o FAIL
- *   OP_SALIR: responde "BYE\n" pero NO cierra el receptor
- */
 void handle_request(Request* req, int client_fd) {
     char response[MAX_LINE_LEN];
 
