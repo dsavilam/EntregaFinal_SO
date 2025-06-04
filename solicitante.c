@@ -37,6 +37,11 @@ void from_file(const char *fname, int fd) {
                 continue;
             }
             printf("Respuesta: %s", resp);
+            /* Si el servidor respondió BYE, salimos */
+            if (strncmp(resp, "BYE", 3) == 0) {
+                fclose(f);
+                return;
+            }
             break;
         }
 
@@ -71,6 +76,7 @@ void interactive(int fd) {
                     continue;
                 }
                 printf("%s", resp);
+                /* BYE: terminamos */
                 break;
             }
             break;

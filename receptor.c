@@ -62,6 +62,37 @@ void* aux2_thread(void* arg) {
 void handle_request(Request* req, int client_fd) {
     char response[MAX_LINE_LEN];
 
+    if (req->op == OP_SALIR) {
+        snprintf(response, sizeof(response), "BYE\n");
+        write(client_fd, response, strlen(response));
+        return;
+    }
+
+    /* Antes de cualquier operación, buscar el libro por ISBN */
+    BookNode* bn = find_book(req->isbn);
+    if (!bn) {
+        /* ISBN no existe → error */
+        snprintf(response, sizeof(response),
+                 "FAIL,NoExiste,%d\n",
+                 req->isbn);
+        write(client_fd, response, strlen(response));
+        if (verbose) {
+            printf("Manejada operación [Q] \"NoExiste\" (ISBN: %d)\n", req->isbn);
+        }
+        return;
+    }
+    /* Si el título no coincide con el título almacenado → error */
+    if (strcmp(req->title, bn->book.title) != 0) {
+        snprintf(response, sizeof(response),
+                 "FAIL,NoExiste,%d\n",
+                 req->isbn);
+        write(client_fd, response, strlen(response));
+        if (verbose) {
+            printf("Manejada operación [Q] \"NoExiste\" (ISBN: %d)\n", req->isbn);
+        }
+        return;
+    }
+
     if (req->op == OP_PRESTAMO) {
         int ejemplar;
         char due_date[DATE_STR_LEN];
@@ -75,15 +106,13 @@ void handle_request(Request* req, int client_fd) {
                      req->isbn);
         }
         write(client_fd, response, strlen(response));
-    } else if (req->op == OP_RENOVAR) {
+    }
+    else if (req->op == OP_RENOVAR) {
         int ejemplar = -1;
-        BookNode* bn = find_book(req->isbn);
-        if (bn) {
-            for (int i = 0; i < bn->book.total; i++) {
-                if (bn->book.ejemplares[i].status == 'P') {
-                    ejemplar = bn->book.ejemplares[i].id;
-                    break;
-                }
+        for (int i = 0; i < bn->book.total; i++) {
+            if (bn->book.ejemplares[i].status == 'P') {
+                ejemplar = bn->book.ejemplares[i].id;
+                break;
             }
         }
         char new_date[DATE_STR_LEN];
@@ -99,15 +128,13 @@ void handle_request(Request* req, int client_fd) {
                      req->isbn);
         }
         write(client_fd, response, strlen(response));
-    } else if (req->op == OP_DEVOLVER) {
+    }
+    else if (req->op == OP_DEVOLVER) {
         int ejemplar = -1;
-        BookNode* bn = find_book(req->isbn);
-        if (bn) {
-            for (int i = 0; i < bn->book.total; i++) {
-                if (bn->book.ejemplares[i].status == 'P') {
-                    ejemplar = bn->book.ejemplares[i].id;
-                    break;
-                }
+        for (int i = 0; i < bn->book.total; i++) {
+            if (bn->book.ejemplares[i].status == 'P') {
+                ejemplar = bn->book.ejemplares[i].id;
+                break;
             }
         }
         if (ejemplar >= 0 && do_devolver(req->isbn, ejemplar) == 0) {
@@ -121,9 +148,6 @@ void handle_request(Request* req, int client_fd) {
                      "FAIL,NoExiste,%d\n",
                      req->isbn);
         }
-        write(client_fd, response, strlen(response));
-    } else if (req->op == OP_SALIR) {
-        snprintf(response, sizeof(response), "BYE\n");
         write(client_fd, response, strlen(response));
     }
 
@@ -178,8 +202,8 @@ int main(int argc, char* argv[]) {
     }
 
     load_db(db_filename);
-
     buffer_init(&task_buffer);
+
     pthread_t tid1, tid2;
     pthread_create(&tid1, NULL, aux1_thread, NULL);
     pthread_create(&tid2, NULL, aux2_thread, NULL);
